@@ -64,3 +64,7 @@ Gunakan Postman untuk menguji endpoint berikut.
     "longitude": 106.8456
     }
     ```
+## Screenshot
+
+### Tampilan menambah buku menggunakan role admin pada postman
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/25a7f075-0c3f-498b-85d7-a635ca08ce74" />
