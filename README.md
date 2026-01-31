@@ -19,6 +19,25 @@ Backend sederhana untuk manajemen perpustakaan dengan fitur peminjaman berbasis 
 - Books: id, title, author, stock, createdAt, updatedAt
 - BorrowLogs: id, userId, bookId, latitude, longitude, borrowDate, createdAt, updatedAt
 
+## Cara Login / Simulasi Akses
+
+Aplikasi ini tidak memiliki endpoint `/login`. Autentikasi dilakukan dengan mengirimkan **Headers** pada setiap request di Postman/Insomnia.
+
+### 1. Masuk sebagai Admin
+Untuk mengakses fitur pengelolaan buku (Tambah, Edit, Hapus), gunakan Header berikut pada request Anda:
+- **Key:** `x-user-role`
+- **Value:** `admin`
+
+### 2. Masuk sebagai User (Peminjam)
+Untuk mengakses fitur peminjaman buku, gunakan Header berikut:
+- **Key:** `x-user-role`
+- **Value:** `user`
+- **Key:** `x-user-id`
+- **Value:** `1` (Ganti angka ini dengan ID user lain untuk simulasi user berbeda)
+
+**Contoh di Postman:**
+Buka tab **Headers** (di bawah URL bar), lalu isi kolom **Key** dan **Value** sesuai instruksi di atas sebelum menekan tombol **Send**.
+
 ## Endpoint API & Pengujian
 Gunakan Postman untuk menguji endpoint berikut.
 
