@@ -68,3 +68,14 @@ Gunakan Postman untuk menguji endpoint berikut.
 
 ### Tampilan menambah buku menggunakan role admin pada postman
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/25a7f075-0c3f-498b-85d7-a635ca08ce74" />
+
+### Tampilan menambah buku menggunakan role admin pada web
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/dd34acf3-ae8c-4a80-a9a5-bf1fefa18369" />
+
+### Tampilan database setelah penambahan buku
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/6a8b1824-db10-4607-b884-8d5fdf55eae8" />
+
+### Tampilan melihat buku pada postman
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/355db92d-15c2-4c28-b714-607aac42261c" />
+
+### 
