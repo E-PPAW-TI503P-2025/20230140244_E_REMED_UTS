@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Geo System</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #4d5b6f;
+            color: #a3c1cd;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        header {
+            margin-bottom: 30px;
+            text-align: center;
+            border-bottom: 2px solid #a3c1cd;
+            padding-bottom: 20px;
+        }
+
+        h1, h2, h3 {
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .logo-accent {
+            color: #f3cdc5;
+            font-weight: bold;
+        }
+
+        .control-panel {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        label {
+            color: #a3c1cd;
+            font-weight: bold;
+        }
+
+        input, select {
+            background-color: #3b4655;
+            border: 1px solid #a3c1cd;
+            color: #ffffff;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #f3cdc5;
+            color: #4d5b6f;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid #a3c1cd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .book-info h3 {
+            font-size: 1.2rem;
+        }
+
+        .book-info p {
+            color: #a3c1cd;
+        }
+
+        .stock-badge {
+            color: #f3cdc5;
+            font-weight: bold;
+        }
+
+        #adminForm {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group input {
+            width: 100%;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Library <span class="logo-accent">GeoSystem</span></h1>
+            <p>Remedial Project Implementation</p>
+        </header>
+
+        <div class="control-panel">
+            <div>
+                <label for="roleSelect">Simulasi Role:</label>
+                <select id="roleSelect" onchange="toggleRole()">
+                    <option value="user">User (Peminjam)</option>
+                    <option value="admin">Admin (Pengelola)</option>
+                </select>
+            </div>
+            <div id="userIdContainer">
+                <label for="userIdInput">User ID:</label>
+                <input type="number" id="userIdInput" value="1" style="width: 80px;">
+            </div>
+            <button onclick="loadBooks()">Refresh Data</button>
+        </div>
+
+        <div id="adminForm">
+            <h2>Tambah Buku Baru</h2>
+            <div class="form-group">
+                <input type="text" id="newTitle" placeholder="Judul Buku">
+            </div>
+            <div class="form-group">
+                <input type="text" id="newAuthor" placeholder="Penulis">
+            </div>
+            <div class="form-group">
+                <input type="number" id="newStock" placeholder="Stok Awal">
+            </div>
+            <button onclick="addBook()">Simpan Buku</button>
+        </div>
+
+        <div id="bookListContainer">
+            <h2>Daftar Buku</h2>
+            <div id="bookList"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        function getHeaders() {
+            const role = document.getElementById('roleSelect').value;
+            const userId = document.getElementById('userIdInput').value;
+            
+            return {
+                'Content-Type': 'application/json',
+                'x-user-role': role,
+                'x-user-id': userId
+            };
+        }
+
+        function toggleRole() {
+            const role = document.getElementById('roleSelect').value;
+            const adminForm = document.getElementById('adminForm');
+            const userIdContainer = document.getElementById('userIdContainer');
+
+            if (role === 'admin') {
+                adminForm.style.display = 'block';
+                userIdContainer.style.display = 'none';
+            } else {
+                adminForm.style.display = 'none';
+                userIdContainer.style.display = 'block';
+            }
+            loadBooks();
+        }
+
+        async function loadBooks() {
+            try {
+                const response = await fetch(`${API_URL}/books`);
+                const books = await response.json();
+                renderBooks(books);
+            } catch (error) {
+                alert('Gagal mengambil data buku. Pastikan server backend berjalan.');
+            }
+        }
+
+        function renderBooks(books) {
+            const list = document.getElementById('bookList');
+            const role = document.getElementById('roleSelect').value;
+            list.innerHTML = '';
+
+            books.forEach(book => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                let actionButton = '';
+                if (role === 'user') {
+                    actionButton = `<button onclick="borrowBook(${book.id})">Pinjam</button>`;
+                } else {
+                    actionButton = `<button onclick="deleteBook(${book.id})" style="background-color: #ef4444; color: white;">Hapus</button>`;
+                }
+
+                card.innerHTML = `
+                    <div class="book-info">
+                        <h3>${book.title}</h3>
+                        <p>Penulis: <span class="logo-accent">${book.author}</span></p>
+                        <p>Stok: <span class="stock-badge">${book.stock}</span></p>
+                    </div>
+                    <div>
+                        ${actionButton}
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        async function addBook() {
+            const title = document.getElementById('newTitle').value;
+            const author = document.getElementById('newAuthor').value;
+            const stock = document.getElementById('newStock').value;
+
+            if (!title || !author || !stock) return alert('Semua field harus diisi');
+
+            try {
+                const response = await fetch(`${API_URL}/books`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ title, author, stock })
+                });
+
+                if (response.ok) {
+                    alert('Buku berhasil ditambahkan');
+                    document.getElementById('newTitle').value = '';
+                    document.getElementById('newAuthor').value = '';
+                    document.getElementById('newStock').value = '';
+                    loadBooks();
+                } else {
+                    alert('Gagal menambah buku');
+                }
+            } catch (error) {
+                alert('Error connecting to server');
+            }
+        }
+
+        async function deleteBook(id) {
+            if(!confirm('Hapus buku ini?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/books/${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+
+                if (response.ok) {
+                    loadBooks();
+                } else {
+                    alert('Gagal menghapus buku');
+                }
+            } catch (error) {
+                alert('Error');
+            }
+        }
+
+        function borrowBook(bookId) {
+            if (!navigator.geolocation) {
+                return alert('Geolocation tidak didukung oleh browser ini.');
+            }
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                try {
+                    const response = await fetch(`${API_URL}/borrow`, {
+                        method: 'POST',
+                        headers: getHeaders(),
+                        body: JSON.stringify({
+                            bookId,
+                            latitude,
+                            longitude
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        alert(`Berhasil! Lokasi tercatat: ${latitude}, ${longitude}`);
+                        loadBooks();
+                    } else {
+                        alert(result.message);
+                    }
+                } catch (error) {
+                    alert('Error saat meminjam buku');
+                }
+            }, () => {
+                alert('Gagal mendapatkan lokasi. Pastikan GPS aktif dan izin diberikan.');
+            });
+        }
+
+        toggleRole();
+    </script>
+</body>
+</html>
