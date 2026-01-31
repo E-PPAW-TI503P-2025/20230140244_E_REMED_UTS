@@ -22,7 +22,7 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
         }
 
         header {
@@ -32,7 +32,7 @@
             padding-bottom: 20px;
         }
 
-        h1, h2, h3 {
+        h1, h2, h3, h4 {
             color: #ffffff;
             margin-bottom: 10px;
         }
@@ -70,7 +70,7 @@
             background-color: #f3cdc5;
             color: #4d5b6f;
             border: none;
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 4px;
             font-weight: bold;
             cursor: pointer;
@@ -81,23 +81,40 @@
             opacity: 0.9;
         }
 
+        .btn-red {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .btn-blue {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
         .card {
             background-color: rgba(255, 255, 255, 0.05);
             border: 1px solid #a3c1cd;
             border-radius: 8px;
             padding: 15px;
-            margin-bottom: 15px;
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
-            align-items: center;
         }
 
-        .book-info h3 {
-            font-size: 1.2rem;
+        .book-info {
+            margin-bottom: 15px;
         }
 
-        .book-info p {
-            color: #a3c1cd;
+        .book-actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
         }
 
         .stock-badge {
@@ -121,8 +138,48 @@
             width: 100%;
         }
 
-        .hidden {
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
             display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: #4d5b6f;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            border: 2px solid #a3c1cd;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #f3cdc5;
+        }
+
+        #detailContent p {
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        #detailContent span {
+            color: #a3c1cd;
+            font-weight: bold;
+            display: inline-block;
+            width: 100px;
         }
     </style>
 </head>
@@ -136,21 +193,21 @@
 
         <div class="control-panel">
             <div>
-                <label for="roleSelect">Simulasi Role:</label>
+                <label for="roleSelect">Mode:</label>
                 <select id="roleSelect" onchange="toggleRole()">
-                    <option value="user">User (Peminjam)</option>
-                    <option value="admin">Admin (Pengelola)</option>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
                 </select>
             </div>
             <div id="userIdContainer">
                 <label for="userIdInput">User ID:</label>
                 <input type="number" id="userIdInput" value="1" style="width: 80px;">
             </div>
-            <button onclick="loadBooks()">Refresh Data</button>
+            <button onclick="loadBooks()">Refresh</button>
         </div>
 
         <div id="adminForm">
-            <h2>Tambah Buku Baru</h2>
+            <h3><span class="logo-accent">POST</span> Tambah Buku Baru</h3>
             <div class="form-group">
                 <input type="text" id="newTitle" placeholder="Judul Buku">
             </div>
@@ -164,8 +221,37 @@
         </div>
 
         <div id="bookListContainer">
-            <h2>Daftar Buku</h2>
-            <div id="bookList"></div>
+            <h2>Daftar Buku (GET)</h2>
+            <div id="bookList" class="grid-container"></div>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('detailModal')">&times;</span>
+            <h3>Detail Buku</h3>
+            <div id="detailContent"></div>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('editModal')">&times;</span>
+            <h3>Edit Buku</h3>
+            <input type="hidden" id="editBookId">
+            <div class="form-group">
+                <label>Judul</label>
+                <input type="text" id="editTitle">
+            </div>
+            <div class="form-group">
+                <label>Penulis</label>
+                <input type="text" id="editAuthor">
+            </div>
+            <div class="form-group">
+                <label>Stok</label>
+                <input type="number" id="editStock">
+            </div>
+            <button onclick="submitUpdate()">Update Data</button>
         </div>
     </div>
 
@@ -204,7 +290,7 @@
                 const books = await response.json();
                 renderBooks(books);
             } catch (error) {
-                alert('Gagal mengambil data buku. Pastikan server backend berjalan.');
+                console.error(error);
             }
         }
 
@@ -217,21 +303,25 @@
                 const card = document.createElement('div');
                 card.className = 'card';
                 
-                let actionButton = '';
+                let actions = '';
+                
+                actions += `<button class="btn-blue" onclick="viewDetail(${book.id})">Detail</button>`;
+
                 if (role === 'user') {
-                    actionButton = `<button onclick="borrowBook(${book.id})">Pinjam</button>`;
+                    actions += `<button onclick="borrowBook(${book.id})">Pinjam</button>`;
                 } else {
-                    actionButton = `<button onclick="deleteBook(${book.id})" style="background-color: #ef4444; color: white;">Hapus</button>`;
+                    actions += `<button onclick="openEditModal(${book.id})">Edit</button>`;
+                    actions += `<button class="btn-red" onclick="deleteBook(${book.id})">Hapus</button>`;
                 }
 
                 card.innerHTML = `
                     <div class="book-info">
-                        <h3>${book.title}</h3>
+                        <h4>${book.title}</h4>
                         <p>Penulis: <span class="logo-accent">${book.author}</span></p>
                         <p>Stok: <span class="stock-badge">${book.stock}</span></p>
                     </div>
-                    <div>
-                        ${actionButton}
+                    <div class="book-actions">
+                        ${actions}
                     </div>
                 `;
                 list.appendChild(card);
@@ -243,7 +333,7 @@
             const author = document.getElementById('newAuthor').value;
             const stock = document.getElementById('newStock').value;
 
-            if (!title || !author || !stock) return alert('Semua field harus diisi');
+            if (!title || !author) return alert('Data tidak lengkap');
 
             try {
                 const response = await fetch(`${API_URL}/books`, {
@@ -253,7 +343,7 @@
                 });
 
                 if (response.ok) {
-                    alert('Buku berhasil ditambahkan');
+                    alert('Sukses! Buku baru berhasil ditambahkan.');
                     document.getElementById('newTitle').value = '';
                     document.getElementById('newAuthor').value = '';
                     document.getElementById('newStock').value = '';
@@ -266,8 +356,70 @@
             }
         }
 
+        async function viewDetail(id) {
+            try {
+                const response = await fetch(`${API_URL}/books/${id}`);
+                const book = await response.json();
+
+                const content = document.getElementById('detailContent');
+                content.innerHTML = `
+                    <p><span>ID:</span> ${book.id}</p>
+                    <p><span>Judul:</span> ${book.title}</p>
+                    <p><span>Penulis:</span> ${book.author}</p>
+                    <p><span>Stok:</span> ${book.stock}</p>
+                    <p><span>Dibuat:</span> ${new Date(book.createdAt).toLocaleString()}</p>
+                    <p><span>Diupdate:</span> ${new Date(book.updatedAt).toLocaleString()}</p>
+                `;
+                
+                document.getElementById('detailModal').style.display = 'flex';
+            } catch (error) {
+                alert('Gagal mengambil detail buku');
+            }
+        }
+
+        async function openEditModal(id) {
+            try {
+                const response = await fetch(`${API_URL}/books/${id}`);
+                const book = await response.json();
+
+                document.getElementById('editBookId').value = book.id;
+                document.getElementById('editTitle').value = book.title;
+                document.getElementById('editAuthor').value = book.author;
+                document.getElementById('editStock').value = book.stock;
+
+                document.getElementById('editModal').style.display = 'flex';
+            } catch (error) {
+                alert('Gagal mengambil data untuk edit');
+            }
+        }
+
+        async function submitUpdate() {
+            const id = document.getElementById('editBookId').value;
+            const title = document.getElementById('editTitle').value;
+            const author = document.getElementById('editAuthor').value;
+            const stock = document.getElementById('editStock').value;
+
+            try {
+                const response = await fetch(`${API_URL}/books/${id}`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ title, author, stock })
+                });
+
+                if (response.ok) {
+                    alert('Sukses! Data buku berhasil diperbarui.');
+                    closeModal('editModal');
+                    loadBooks();
+                } else {
+                    alert('Gagal mengupdate buku');
+                }
+            } catch (error) {
+                alert('Error connecting to server');
+            }
+        }
+
         async function deleteBook(id) {
-            if(!confirm('Hapus buku ini?')) return;
+            if(!confirm('Yakin ingin menghapus buku ini?')) return;
 
             try {
                 const response = await fetch(`${API_URL}/books/${id}`, {
@@ -276,6 +428,7 @@
                 });
 
                 if (response.ok) {
+                    alert('Sukses! Buku berhasil dihapus.');
                     loadBooks();
                 } else {
                     alert('Gagal menghapus buku');
@@ -287,7 +440,7 @@
 
         function borrowBook(bookId) {
             if (!navigator.geolocation) {
-                return alert('Geolocation tidak didukung oleh browser ini.');
+                return alert('Geolocation tidak didukung browser ini');
             }
 
             navigator.geolocation.getCurrentPosition(async (position) => {
@@ -298,27 +451,31 @@
                     const response = await fetch(`${API_URL}/borrow`, {
                         method: 'POST',
                         headers: getHeaders(),
-                        body: JSON.stringify({
-                            bookId,
-                            latitude,
-                            longitude
-                        })
+                        body: JSON.stringify({ bookId, latitude, longitude })
                     });
-
-                    const result = await response.json();
                     
+                    const result = await response.json();
+
                     if (response.ok) {
-                        alert(`Berhasil! Lokasi tercatat: ${latitude}, ${longitude}`);
+                        alert('Sukses! Buku berhasil dipinjam. Lokasi tercatat.');
                         loadBooks();
                     } else {
                         alert(result.message);
                     }
                 } catch (error) {
-                    alert('Error saat meminjam buku');
+                    alert('Error transaction');
                 }
-            }, () => {
-                alert('Gagal mendapatkan lokasi. Pastikan GPS aktif dan izin diberikan.');
             });
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target.className === 'modal-overlay') {
+                event.target.style.display = 'none';
+            }
         }
 
         toggleRole();
